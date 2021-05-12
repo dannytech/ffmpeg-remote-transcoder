@@ -94,7 +94,7 @@ def convert_references(ffmpeg_command, dir):
     # Convert the outfile reference to point to the job reference
     if not bypass and not ffmpeg_command[-1].startswith("pipe:"):
         # Link up the destination file
-        dest = link(ffmpeg_command[-1], "dest")
+        dest = link(os.path.abspath(ffmpeg_command[-1]), "dest")
 
         # Replace the outfile reference
         ffmpeg_command[-1] = os.path.join(dir, dest)
