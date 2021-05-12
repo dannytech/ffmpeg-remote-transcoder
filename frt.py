@@ -13,7 +13,7 @@ import re
 job = uuid.uuid4().hex
 
 # Create a new logger for this job
-log = logging.getLogger(f"frt-{job}")
+log = logging.getLogger(f"ffmpeg-remote-transcoder-{job[:6]}")
 
 # Load the ffmpeg-remote-transcoder configuration
 config = configparser.ConfigParser()
