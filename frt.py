@@ -9,11 +9,15 @@ import sys
 import os
 import re
 
-log = logging.getLogger("ffmpeg-remote")
+# Create a job identifier (used to uniquely identify files)
+job = uuid.uuid4().hex
 
-# Load the ffmpeg-remote configuration
+# Create a new logger for this job
+log = logging.getLogger(f"frt-{job}")
+
+# Load the ffmpeg-remote-transcoder configuration
 config = configparser.ConfigParser()
-config.read("/etc/ffmpeg-remote.conf")
+config.read("/etc/frt.conf")
 
 # Validate that the required parameters are set
 required_params = (("Server", "Host"), ("Server", "Username"), ("Server", "WorkingDirectory"))
@@ -21,9 +25,6 @@ for param in required_params:
     if not config.has_option(*param):
         log.error(f"Missing required configuration option {param[0]}/{param[1]}")
         exit()
-
-# Create a job identifier (used to uniquely identify files)
-job = uuid.uuid4().hex
 
 # Parse the ffmpeg arguments to passthrough
 ffmpeg_args = sys.argv[1:]
@@ -149,7 +150,7 @@ def link(file, type):
 
     :returns: The filename of the newly created link
     """
-    dir = config.get("Client", "WorkingDirectory", fallback="/opt/ffmpeg-remote/")
+    dir = config.get("Client", "WorkingDirectory", fallback="/opt/frt/")
 
     # Create the filename using the job, source/destination type, and file extension
     ext = os.path.splitext(file)
@@ -209,7 +210,7 @@ def run_ffmpeg_local():
     ffmpeg_command = generate_ffmpeg_command(context="Client")
 
     # Link files to the working directory
-    dir = config.get("Client", "WorkingDirectory", fallback="/opt/ffmpeg-remote/")
+    dir = config.get("Client", "WorkingDirectory", fallback="/opt/frt/")
     convert_references(ffmpeg_command, dir)
 
     # Remap the standard in, out, and error to properly handle data streams
@@ -242,7 +243,7 @@ def cleanup(signum="", frame=""):
     subprocess.run(ssh_command + kill_command)
 
     # Unlink the source and destination files
-    dir = config.get("Client", "WorkingDirectory", fallback="/opt/ffmpeg-remote/")
+    dir = config.get("Client", "WorkingDirectory", fallback="/opt/frt/")
     
     while len(linked) > 0:
         link = linked.pop()
@@ -264,7 +265,7 @@ def main():
     signal.signal(signal.SIGHUP, cleanup)
 
     # Configure logging
-    logfile = config.get("Logging", "LogFile", fallback="/var/log/ffmpeg-remote.log")
+    logfile = config.get("Logging", "LogFile", fallback="/var/log/frt.log")
     logging.basicConfig(filename=logfile, level=logging.INFO)
 
     log.info("Beginning remote transcoding...")
