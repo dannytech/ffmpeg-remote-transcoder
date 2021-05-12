@@ -79,6 +79,9 @@ def convert_references(ffmpeg_command, dir):
     :param ffmpeg_command: The ffmpeg command to convert
     :param dir: The server working directory to reference links towards
     """
+    global src_link
+    global dest_link
+
     localdir = config.get("Client", "WorkingDirectory", fallback="/opt/frt/")
 
     # Convert the job reference to point to the infile
