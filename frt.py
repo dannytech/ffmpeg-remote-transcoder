@@ -84,8 +84,13 @@ def forward_reference(ffmpeg_command):
     """
     # Find and replace all file references with links
     for i, arg in enumerate(ffmpeg_command):
+        # Detect if this is specifically indicated to be a file
+        is_file = arg.startswith("file:")
+        if is_file:
+            arg = arg[5:]
+
         # If the argument appears to have a file extension
-        if len(os.path.splitext(arg)[1]) > 1:
+        if is_file or len(os.path.splitext(arg)[1]) > 1:
             absolute = os.path.abspath(arg)
 
             relative = os.path.relpath(absolute, "/")
