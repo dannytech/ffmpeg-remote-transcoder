@@ -34,7 +34,8 @@ commands_bypass = { "-help", "-h", "-version", "-encoders", "-decoders" }
 bypass = len([ cmd for cmd in commands_bypass if cmd in ffmpeg_args ]) > 0
 
 # Linked files to dereference later
-linked = []
+src_link = ()
+dest_link = ()
 
 def generate_ssh_command():
     """
@@ -76,30 +77,41 @@ def convert_references(ffmpeg_command, dir):
     Convert file references to temporary job symlinks
 
     :param ffmpeg_command: The ffmpeg command to convert
-    :param dir: The working directory to reference links towards
+    :param dir: The server working directory to reference links towards
     """
-    # Convert the infile reference to point to the job reference
-    if "-i" in ffmpeg_command:
-        infile = ffmpeg_command.index("-i")
+    localdir = config.get("Client", "WorkingDirectory", fallback="/opt/frt/")
 
-        if not ffmpeg_command[infile].startswith("pipe:"):
+    # Convert the job reference to point to the infile
+    if "-i" in ffmpeg_command:
+        inindex = ffmpeg_command.index("-i") + 1
+        infile = ffmpeg_command[inindex]
+
+        if not infile.startswith("pipe:"):
             # Link up the source file
-            source = link(ffmpeg_command[infile + 1], "src")
+            ext = os.path.splitext(infile)
+            name = f"{job}-src{ext[1]}"
+
+            # Link the files and add them to the cleanup stack
+            src_link = (os.path.abspath(infile), os.path.join(localdir, name))
+            link(*src_link)
 
             # Replace the infile reference
-            ffmpeg_command[infile + 1] = os.path.join(dir, source)
-        else:
-            None
+            ffmpeg_command[inindex] = os.path.join(dir, name)
 
-    # Convert the outfile reference to point to the job reference
-    if not bypass and not ffmpeg_command[-1].startswith("pipe:"):
+    outfile = ffmpeg_command[-1]
+
+    # Convert the outfile reference to point to the job file
+    if len(ffmpeg_command) > 1 and not bypass and not outfile.startswith("pipe:"):
         # Link up the destination file
-        dest = link(os.path.abspath(ffmpeg_command[-1]), "dest")
+        ext = os.path.splitext(outfile)
+        name = f"{job}-dest{ext[1]}"
+
+        # Link the files and add them to the cleanup stack
+        dest_link = (os.path.join(localdir, name), os.path.abspath(outfile))
+        link(*dest_link)
 
         # Replace the outfile reference
-        ffmpeg_command[-1] = os.path.join(dir, dest)
-    else:
-        None
+        ffmpeg_command[-1] = os.path.join(dir, name)
 
 def generate_ffmpeg_command(context="Server"):
     """
@@ -146,35 +158,25 @@ def map_std(ffmpeg_command):
     
     return (stdin, stdout, stderr)
 
-def link(file, type):
+def link(source, destination):
     """
     Link the source and destination files to the working directory
 
-    :param file: The source file to symlink to the working directory, can be null if unlinking
-    :param type: The file purpose, usually "src" or "dest"
+    :param source: The source file to symlink
+    :param destination: The destination symlink location
 
     :returns: The filename of the newly created link
     """
-    dir = config.get("Client", "WorkingDirectory", fallback="/opt/frt/")
-
-    # Create the filename using the job, source/destination type, and file extension
-    ext = os.path.splitext(file)
-    name = f"{job}-{type}{ext[1]}"
-
-    # Join the working directory and the new link together
-    link = os.path.join(dir, name)
+    name = os.path.basename(destination)
 
     # Create or reuse the link
-    if not os.path.islink(link):
+    if not os.path.islink(destination):
         # Link the file
-        os.symlink(file, link)
-        linked.append(name)
+        os.symlink(source, destination)
 
         log.info(f"Created link {name}")
     else:
         log.info(f"Using existing link {name}")
-    
-    return name
 
 def run_ffmpeg_remote():
     """
@@ -246,17 +248,15 @@ def cleanup(signum="", frame=""):
     log.info(kill_command)
     
     subprocess.run(ssh_command + kill_command)
-
-    # Unlink the source and destination files
-    dir = config.get("Client", "WorkingDirectory", fallback="/opt/frt/")
     
-    while len(linked) > 0:
-        link = linked.pop()
+    # Remove the link from the source file to a working reference
+    if len(src_link) == 2:
+        os.unlink(src_link[1])
 
-        # Remove the symlink
-        os.unlink(os.path.join(dir, link))
-
-        log.info(f"Destroyed link {link}")
+    # Remove the link from the reference to the working destination
+    if len(dest_link) == 2:
+        # Move the completed file from the working directory to the place where the link resided
+        os.replace(*dest_link)
     
     log.info("Cleaned up, exiting")
 
