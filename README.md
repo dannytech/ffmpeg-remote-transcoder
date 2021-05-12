@@ -36,7 +36,7 @@ Copy the sample configuration file to `/etc/frt.conf`. The settings are document
     * `FfmpegPath` (optional, default `/usr/bin/ffmpeg`): The location of the Ffmpeg binary on the server
     * `FfprobePath` (optional, default `/usr/bin/ffprobe`): The location of the Ffprobe binary on the server
 * `Client`
-    * `WorkingDirectory` (optional, default `/opt/frt`): A working directory for FRT to create symlinks in, shared by Samba
+    * `WorkingDirectory` (optional, default `/opt/frt/`): A working directory for FRT to create symlinks in, shared by Samba
     * `FfmpegPath` (optional, default `/usr/bin/ffmpeg`): The location of the fallback Ffmpeg binary on the client
     * `FfprobePath` (optional, default `/usr/bin/ffprobe`): The location of the fallback Ffprobe binary on the client
 * `Logging`
