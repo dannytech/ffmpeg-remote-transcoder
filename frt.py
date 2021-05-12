@@ -207,6 +207,9 @@ def run_ffmpeg_command(context="Server"):
 
         time.sleep(0.25)
 
+    # Link the last of the files
+    reverse_reference()
+
     # Fall back to local ffmpeg if SSH could not connect
     if context == "Server" and proc.returncode == 255:
         log.error("Failed to connect to remote host")
@@ -242,7 +245,7 @@ def cleanup(signum="", frame=""):
             if os.path.islink(working):
                 # Remove symbolic links but do not remove the source
                 os.unlink(working)
-            else:
+            elif os.path.islink(absolute):
                 # Move the completed file to its destination, replacing any links
                 os.remove(absolute)
                 os.replace(working, absolute)
