@@ -11,7 +11,7 @@ Before installing FRT, the client and server must be connected using a file shar
 ```ini
 [transcode]
    comment = Videos for remote transcoding
-   path = <working directory>
+   path = /opt/frt
    writable = yes
    follow symlinks = yes
    wide links = yes
