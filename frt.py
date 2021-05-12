@@ -57,6 +57,11 @@ def generate_ssh_command():
     ssh_command.extend([ "-o", "StrictHostKeyChecking=no" ])
     ssh_command.extend([ "-o", "UserKnownHostsFile=/dev/null" ])
 
+    # Load SSH key for authentication
+    key = config.get("Server", "IdentityFile", fallback=None)
+    if key is not None:
+        ssh_command.extend([ "-i", key ])
+
     # Load the remote host configuration
     username = config.get("Server", "Username")
     host = config.get("Server", "Host")
