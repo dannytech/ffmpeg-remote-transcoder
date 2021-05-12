@@ -108,9 +108,9 @@ def generate_ffmpeg_command(context="Server"):
 
     # Start with the command that was used to run this script (should be ffmpeg or ffprobe)
     if "ffprobe" in sys.argv[0]:
-        ffmpeg_command.append(config.get(context, "FfprobeCommand", fallback="/usr/bin/ffprobe"))
+        ffmpeg_command.append(config.get(context, "FfprobePath", fallback="/usr/bin/ffprobe"))
     else:
-        ffmpeg_command.append(config.get(context, "FfmpegCommand", fallback="/usr/bin/ffmpeg"))
+        ffmpeg_command.append(config.get(context, "FfmpegPath", fallback="/usr/bin/ffmpeg"))
 
     for arg in ffmpeg_args:
         # Escape malformed arguments (such as those including whitespace and invalid characters)
