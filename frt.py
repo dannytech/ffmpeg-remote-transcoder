@@ -113,18 +113,16 @@ def reverse_reference():
     """
     for root, _, files in os.walk(localdir):
         for file in files:
-            # Ignore infile references
-            if not os.path.islink(file):
-                relative = os.path.relpath(os.path.join(root, file), localdir)
-                absolute = os.path.join("/", relative)
-                working = os.path.join(root, file)
+            relative = os.path.relpath(os.path.join(root, file), localdir)
+            absolute = os.path.join("/", relative)
+            working = os.path.join(root, file)
 
-                # Test if the file is already linked
-                if not os.path.islink(absolute):
-                    # Link the destination output to the working copy
-                    os.symlink(working, absolute)
+            # Ignore infile references and existing reverse references
+            if not os.path.islink(working) and not os.path.islink(absolute):
+                # Link the destination output to the working copy
+                os.symlink(working, absolute)
 
-                    log.info(f"Linked destination file {absolute}")
+                log.info(f"Linked destination file {absolute}")
 
 def generate_ffmpeg_command(context):
     """
