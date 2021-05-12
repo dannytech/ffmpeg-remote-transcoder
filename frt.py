@@ -239,6 +239,7 @@ def cleanup(signum="", frame=""):
                 working = os.path.join(root, file)
 
                 # Move the completed file to its destination, replacing any links
+                os.remove(absolute)
                 os.replace(working, absolute)
 
         # Remove the current directory (walking starts from the lowest level)
