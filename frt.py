@@ -253,10 +253,14 @@ def cleanup(signum="", frame=""):
     if len(src_link) == 2:
         os.unlink(src_link[1])
 
+        log.info("Unlinked source file")
+
     # Remove the link from the reference to the working destination
     if len(dest_link) == 2:
         # Move the completed file from the working directory to the place where the link resided
         os.replace(*dest_link)
+
+        log.info("Unlinked and moved destination file")
     
     log.info("Cleaned up, exiting")
 
