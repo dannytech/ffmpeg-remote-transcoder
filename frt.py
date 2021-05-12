@@ -230,14 +230,14 @@ def cleanup(signum="", frame=""):
     log.info("Unlinking file references...")
     for root, _, files in os.walk(localdir, topdown=False):
         for file in files:
-            if os.path.islink(file):
-                # Remove symbolic links but do not remove the source
-                os.unlink(file)
-            else:
-                relative = os.path.relpath(os.path.join(root, file), localdir)
-                absolute = os.path.join("/", relative)
-                working = os.path.join(root, file)
+            relative = os.path.relpath(os.path.join(root, file), localdir)
+            absolute = os.path.join("/", relative)
+            working = os.path.join(root, file)
 
+            if os.path.islink(working):
+                # Remove symbolic links but do not remove the source
+                os.unlink(working)
+            else:
                 # Move the completed file to its destination, replacing any links
                 os.remove(absolute)
                 os.replace(working, absolute)
