@@ -142,12 +142,15 @@ def generate_ffmpeg_command(context):
     else:
         ffmpeg_command.append(config.get(context, "FfmpegPath", fallback="/usr/bin/ffmpeg"))
 
-    for arg in ffmpeg_args:
+    ffmpeg_command.extend(ffmpeg_args)
+
+    # Update file links and prepare working directory
+    forward_reference(ffmpeg_command)
+
+    for i, arg in enumerate(ffmpeg_command):
         # Escape malformed arguments (such as those including whitespace and invalid characters)
-        if re.search(r"/[*()\s|\[\]]/", arg):
-            ffmpeg_command.append(f"\"{arg}\"")
-        else:
-            ffmpeg_command.append(arg)
+        if re.search(r"[*()\s|\[\]]", arg):
+            ffmpeg_command[i] = f"\"{arg}\""
         
     return ffmpeg_command
 
@@ -183,9 +186,6 @@ def run_ffmpeg_command(context="Server"):
 
     # Remap the standard in, out, and error to properly handle data streams
     (stdin, stdout, stderr) = map_std(ffmpeg_command)
-
-    # Update file links and prepare working directory
-    forward_reference(ffmpeg_args)
 
     log.info(f"Running ffmpeg command on {context.lower()}...")
     log.info(ffmpeg_command)
