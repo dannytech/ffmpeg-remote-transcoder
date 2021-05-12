@@ -9,6 +9,9 @@ FRT is designed for many-to-one remote transcoding, allowing multiple clients to
 Before installing FRT, the client and server must be connected using a file share so that the server has near direct access to limited client files. Because FRT uses symlinks to connect files to the working directory, a file server supporting symlink resolution outside of the share must be used. Samba server is used in the reference implementation for this reason. A simple share configuration like below will suffice:
 
 ```ini
+[global]
+   allow insecure wide links = yes
+
 [transcode]
    comment = Videos for remote transcoding
    path = /opt/frt
