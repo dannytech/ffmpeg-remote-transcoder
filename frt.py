@@ -102,8 +102,8 @@ def forward_reference(ffmpeg_command):
             os.makedirs(os.path.dirname(local_working), exist_ok=True)
 
             # Link source files properly
-            if ffmpeg_command[i - 1] == "-i" and not os.path.exists(local_working):
-                os.link(absolute, local_working)
+            if ffmpeg_command[i - 1] == "-i" and not os.path.islink(local_working):
+                os.symlink(absolute, local_working)
 
                 log.info(f"Linked source file {absolute}")
 
@@ -240,7 +240,7 @@ def cleanup(signum="", frame=""):
         for file in files:
             working = os.path.join(root, file)
 
-            # Remove the working side of the hard link (the inode will still exist on the other end)
+            # Remove the working side of the hard/soft link, the other end will be preserved
             os.unlink(working)
 
         # Remove the current directory (walking starts from the lowest level)
