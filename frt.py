@@ -65,6 +65,11 @@ def generate_ssh_command():
     ssh_command.extend([ "-o", "StrictHostKeyChecking=no" ])
     ssh_command.extend([ "-o", "UserKnownHostsFile=/dev/null" ])
 
+    # Create a persistent session to avoid the latency of setting up a tunnel for each subsequent FRT execution
+    ssh_command.extend([ "-o", "ControlMaster=auto" ])
+    ssh_command.extend([ "-o", "ControlPath=/tmp/ssh-%r@%h:%p" ])
+    ssh_command.extend([ "-o", "ControlPersist=600" ])
+
     # Load SSH key for authentication
     key = config.get("Server", "IdentityFile", fallback=None)
     if key is not None:
