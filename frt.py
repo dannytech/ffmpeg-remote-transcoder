@@ -20,12 +20,9 @@ log = logging.getLogger(f"ffmpeg-remote-transcoder-{job[:6]}")
 config = configparser.ConfigParser()
 config.read("/etc/frt.conf")
 
-# Create the local working directory
-localdir = os.path.join(config.get("Client", "WorkingDirectory", fallback="/opt/frt/"), job)
-os.makedirs(localdir)
-
-# Predict the remote mounted working directory
-remotedir = os.path.join(config.get("Server", "WorkingDirectory"), job)
+# Configure logging
+logfile = config.get("Logging", "LogFile", fallback="/var/log/frt.log")
+logging.basicConfig(filename=logfile, level=logging.INFO)
 
 # Validate that the required parameters are set
 required_params = (("Server", "Host"), ("Server", "Username"), ("Server", "WorkingDirectory"))
@@ -33,6 +30,13 @@ for param in required_params:
     if not config.has_option(*param):
         log.error(f"Missing required configuration option {param[0]}/{param[1]}")
         exit()
+
+# Create the local working directory
+localdir = os.path.join(config.get("Client", "WorkingDirectory", fallback="/opt/frt/"), job)
+os.makedirs(localdir)
+
+# Predict the remote mounted working directory
+remotedir = os.path.join(config.get("Server", "WorkingDirectory"), job)
 
 # Parse the ffmpeg arguments to passthrough
 ffmpeg_args = sys.argv[1:]
@@ -265,10 +269,6 @@ def main():
     signal.signal(signal.SIGINT, cleanup)
     signal.signal(signal.SIGQUIT, cleanup)
     signal.signal(signal.SIGHUP, cleanup)
-
-    # Configure logging
-    logfile = config.get("Logging", "LogFile", fallback="/var/log/frt.log")
-    logging.basicConfig(filename=logfile, level=logging.INFO)
 
     log.info("Beginning transcoding...")
 
