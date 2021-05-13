@@ -102,8 +102,8 @@ def forward_reference(ffmpeg_command):
             os.makedirs(os.path.dirname(local_working), exist_ok=True)
 
             # Link source files properly
-            if ffmpeg_command[i - 1] == "-i" and not os.path.islink(local_working):
-                os.symlink(absolute, local_working)
+            if ffmpeg_command[i - 1] == "-i" and not os.path.exists(local_working):
+                os.link(absolute, local_working)
 
                 log.info(f"Linked source file {absolute}")
 
@@ -122,10 +122,10 @@ def reverse_reference():
             absolute = os.path.join("/", relative)
             working = os.path.join(root, file)
 
-            # Ignore infile references and existing reverse references
-            if not os.path.islink(working) and not os.path.islink(absolute):
+            # Ignore infile references and existing reverse references (both have a file on the other end)
+            if not os.path.exists(absolute):
                 # Link the destination output to the working copy
-                os.symlink(working, absolute)
+                os.link(working, absolute)
 
                 log.info(f"Linked destination file {absolute}")
 
@@ -238,17 +238,10 @@ def cleanup(signum="", frame=""):
     log.info("Unlinking file references...")
     for root, _, files in os.walk(localdir, topdown=False):
         for file in files:
-            relative = os.path.relpath(os.path.join(root, file), localdir)
-            absolute = os.path.join("/", relative)
             working = os.path.join(root, file)
 
-            if os.path.islink(working):
-                # Remove symbolic links but do not remove the source
-                os.unlink(working)
-            elif os.path.islink(absolute):
-                # Move the completed file to its destination, replacing any links
-                os.remove(absolute)
-                os.replace(working, absolute)
+            # Remove the working side of the hard link (the inode will still exist on the other end)
+            os.unlink(working)
 
         # Remove the current directory (walking starts from the lowest level)
         os.rmdir(root)
