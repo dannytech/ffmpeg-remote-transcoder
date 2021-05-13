@@ -108,7 +108,7 @@ def forward_reference(ffmpeg_command):
                 log.info(f"Linked source file {absolute}")
 
             # Replace paths with adjusted remote working paths
-            ffmpeg_command[i] = remote_working
+            ffmpeg_command[i] = f"file:{remote_working}"
 
             # Note that no links are made for destination files as these are detected and linked at runtime
 
