@@ -140,6 +140,20 @@ def generate_ffmpeg_command(context):
 
     ffmpeg_command = []
 
+    # Inject environment variables onto the server
+    env = config.get("Server", "Environment", fallback=None)
+    if env is not None:
+        # Separate into a list of vars
+        env_vars = env.split()
+
+        for var in env_vars:
+            # Get the value to export
+            val = os.getenv(var)
+
+            if val is not None:
+                # Add a command to export the variable
+                ffmpeg_command.extend([ "export", f"{var}=\"{val}\"", ";" ])
+
     # Start with the command that was used to run this script (should be ffmpeg or ffprobe)
     if "ffprobe" in sys.argv[0]:
         ffmpeg_command.append(config.get(context, "FfprobePath", fallback="/usr/bin/ffprobe"))
