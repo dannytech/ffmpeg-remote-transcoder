@@ -10,6 +10,9 @@ import os
 import time
 import re
 
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
+
 # Create a job identifier (used to uniquely identify files)
 job = uuid.uuid4().hex
 
@@ -44,6 +47,20 @@ ffmpeg_args = sys.argv[1:]
 # Commands that should be redirected to stdout
 commands_bypass = { "-help", "-h", "-version", "-encoders", "-decoders", "-hwaccels" }
 bypass = len([ cmd for cmd in commands_bypass if cmd in ffmpeg_args ]) > 0
+
+# Event handler for working directory changes
+class WorkingDirectoryMonitor(FileSystemEventHandler):
+    def on_created(self, event):
+        working = os.path.join(localdir, event.src_path)
+        relative = os.path.relpath(working, localdir)
+        absolute = os.path.join("/", relative)
+
+        # Ignore infile references and existing reverse references (both have a file on the other end)
+        if not os.path.exists(absolute):
+            # Link the destination output to the working copy
+            os.link(working, absolute)
+
+            log.info(f"Linked destination file {absolute}")
 
 def generate_ssh_command():
     """
@@ -129,19 +146,20 @@ def forward_reference(ffmpeg_command):
 def reverse_reference():
     """
     Detects and links output files from ffmpeg to their final destination
+
+    :returns: The file system observer, for easy stopping
     """
-    for root, _, files in os.walk(localdir):
-        for file in files:
-            relative = os.path.relpath(os.path.join(root, file), localdir)
-            absolute = os.path.join("/", relative)
-            working = os.path.join(root, file)
+    # Create a new monitor
+    monitor = WorkingDirectoryMonitor()
 
-            # Ignore infile references and existing reverse references (both have a file on the other end)
-            if not os.path.exists(absolute):
-                # Link the destination output to the working copy
-                os.link(working, absolute)
+    # Create a file system observer
+    observer = Observer()
+    observer.schedule(monitor, localdir, recursive=True)
 
-                log.info(f"Linked destination file {absolute}")
+    # Begin monitoring the directory for changes
+    observer.start()
+
+    return observer
 
 def generate_ffmpeg_command(context):
     """
@@ -207,22 +225,23 @@ def run_ffmpeg_command(context="Server"):
     log.info(f"Running ffmpeg command on {context.lower()}...")
     log.info(ffmpeg_command)
 
-    # Run the ffmpeg command
+    # Determine whether to run the command locally or on the server
     if context == "Server":
         command = ssh_command + ffmpeg_command
     elif context == "Client":
         command = ffmpeg_command
-    proc = subprocess.Popen(command, shell=False, bufsize=0, universal_newlines=True, stdin=stdin, stdout=stdout, stderr=stderr)
 
-    # Wait until the command has finished, while checking for new output files
-    while proc.poll() is None:
-        # Walk the directory, building reverse references for new files
-        reverse_reference()
+    # Begin watching for new files in the working directory
+    observer = reverse_reference()
 
-        time.sleep(0.25)
+    # Run the command
+    proc = subprocess.run(command, shell=False, bufsize=0, universal_newlines=True, stdin=stdin, stdout=stdout, stderr=stderr)
 
-    # Link the last of the files
-    reverse_reference()
+    # Stop watching for file system changes
+    observer.stop()
+
+    # Wait for the monitor thread to terminate
+    observer.join()
 
     # Fall back to local ffmpeg if SSH could not connect
     if context == "Server" and proc.returncode == 255:
