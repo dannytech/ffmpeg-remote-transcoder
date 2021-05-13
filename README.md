@@ -33,6 +33,7 @@ Copy the sample configuration file to `/etc/frt.conf`. The settings are document
     * `Host`: The hostname or IP used to connect to the transcoding server
     * `Username`: The SSH username, should be created on the server and have access to the transcode location
     * `IdentityFile` (optional): An SSH private key to use for authentication with the server
+    * `Persist` (optional, default 120): How long to persist SSH connections, in seconds
     * `WorkingDirectory`: The location of the mounted working directory on the server
     * `FfmpegPath` (optional, default `/usr/bin/ffmpeg`): The location of the ffmpeg binary on the server
     * `FfprobePath` (optional, default `/usr/bin/ffprobe`): The location of the ffprobe binary on the server
