@@ -25,7 +25,7 @@ Then, create a Samba client user and set their password with `smbpasswd -a <user
 
 There are two ways to install the FRT script. The first method is to simply place `frt.py` anywhere on disk, then point an application like Jellyfin to this script path. In Jellyfin, this means going to `Playback > Transcoding` in the Dashboard, and updating the `FFmpeg path` to the absolute path of `frt.py`. The alternative is to symlink the `ffmpeg` and `ffprobe` binaries in `/usr/bin/` to `frt.py`, though this requires moving `ffmpeg` and `ffprobe` elsewhere. In any case, be sure `Client/FfmpegPath` and `Client/FfprobePath` are correctly set to local ffmpeg binaries to allow for local fallback. Note that the fallback will be effectively useless if hardware acceleration is enabled, unless the application is able to fall back to software transcoding on its own.
 
-Lastly, be sure to install this script's only Python dependency, `watchdog`, as the user that will be running FRT.
+Lastly, be sure to install this script's only Python dependency, `watchdog` (install with `apt install python3-watchdog`), as the user that will be running FRT.
 
 ## Configuration
 
