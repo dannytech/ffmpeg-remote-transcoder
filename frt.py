@@ -58,6 +58,9 @@ def generate_ssh_command():
     ssh_command.extend([ "-o", "ConnectTimeout=1" ])
     ssh_command.extend([ "-o", "ConnectionAttempts=1" ])
 
+    # Don't fall back to interactive authentication
+    ssh_command.extend([ "-o", "BatchMode=yes" ])
+
     # Don't perform server validation
     ssh_command.extend([ "-o", "StrictHostKeyChecking=no" ])
     ssh_command.extend([ "-o", "UserKnownHostsFile=/dev/null" ])
