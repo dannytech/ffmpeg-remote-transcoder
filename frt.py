@@ -7,7 +7,6 @@ import signal
 import uuid
 import sys
 import os
-import time
 import re
 
 from watchdog.events import FileSystemEventHandler
