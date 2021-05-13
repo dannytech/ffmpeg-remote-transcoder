@@ -89,8 +89,9 @@ def forward_reference(ffmpeg_command):
         if is_file:
             arg = arg[5:]
 
-        # If the argument appears to have a file extension
-        if is_file or len(os.path.splitext(arg)[1]) > 1:
+        # If the argument appears to be a normal file (the extension must contain a letter, to avoid linking timestamps)
+        extension = os.path.splitext(arg)[1]
+        if is_file or re.search(r"^\.(?=.*[a-zA-Z]).*$", extension):
             absolute = os.path.abspath(arg)
 
             relative = os.path.relpath(absolute, "/")
