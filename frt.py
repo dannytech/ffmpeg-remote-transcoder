@@ -38,7 +38,7 @@ for param in required_params:
 ffmpeg_args = sys.argv[1:]
 
 # Commands that should be redirected to stdout
-commands_bypass = { "-help", "-h", "-version", "-encoders", "-decoders" }
+commands_bypass = { "-help", "-h", "-version", "-encoders", "-decoders", "-hwaccels" }
 bypass = len([ cmd for cmd in commands_bypass if cmd in ffmpeg_args ]) > 0
 
 def generate_ssh_command():
