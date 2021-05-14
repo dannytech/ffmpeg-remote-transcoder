@@ -88,7 +88,7 @@ def generate_ssh_command():
     # Create a persistent session to avoid the latency of setting up a tunnel for each subsequent FRT execution
     persist = config.get("Server", "Persist", fallback=120)
     ssh_command.extend([ "-o", "ControlMaster=auto" ])
-    ssh_command.extend([ "-o", "ControlPath=/tmp/ssh-%r@%h:%p" ])
+    ssh_command.extend([ "-o", "ControlPath=/run/shm/ssh-%r@%h:%p" ])
     ssh_command.extend([ "-o", f"ControlPersist={persist}" ])
 
     # Load SSH key for authentication
