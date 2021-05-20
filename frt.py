@@ -64,7 +64,7 @@ class WorkingDirectoryMonitor(FileSystemEventHandler):
         working, absolute = self.paths(event)
 
         # Check for a canary file and stop monitoring if it's seen
-        if absolute == f"{job}.frt":
+        if absolute == "canary.frt":
             self.observer.stop()
 
             return
@@ -276,7 +276,9 @@ def run_ffmpeg_command(context="Server"):
         return run_ffmpeg_command(context="Client")
 
     # Plant a canary to prevent a race condition due to SMB latency
-    subprocess.run([ "touch", os.path.join(remotedir, f"{job}.frt") ], shell=False, bufsize=0, universal_newlines=True)
+    subprocess.run([ "touch", os.path.join(remotedir, "canary.frt") ], shell=False, bufsize=0, universal_newlines=True)
+
+    log.info("Waiting for observer to exit...")
 
     # Wait for the monitor thread to terminate after seeing the canary file
     wait = config.getint("Client", "WriteTimeout", fallback=3)
@@ -289,7 +291,9 @@ def run_ffmpeg_command(context="Server"):
 
         # Rejoin, this time it should succeed
         observer.join()
-    
+
+        log.warning("Killed long-running observer, consider increasing WaitTimeout")
+
     # Return the ffmpeg return code
     return proc.returncode
 
