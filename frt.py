@@ -64,7 +64,7 @@ class WorkingDirectoryMonitor(FileSystemEventHandler):
         working, absolute = self.paths(event)
 
         # Check for a canary file and stop monitoring if it's seen
-        if absolute == "canary.frt":
+        if absolute == "/canary.frt":
             self.observer.stop()
 
             return
