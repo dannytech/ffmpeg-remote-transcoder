@@ -49,10 +49,16 @@ bypass = len([ cmd for cmd in commands_bypass if cmd in ffmpeg_args ]) > 0
 
 # Event handler for working directory changes
 class WorkingDirectoryMonitor(FileSystemEventHandler):
-    def on_created(self, event):
+    def paths(self, event):
+        # Generate the various paths representing a single file
         working = os.path.join(localdir, event.src_path)
         relative = os.path.relpath(working, localdir)
         absolute = os.path.join("/", relative)
+
+        return working, absolute
+
+    def on_created(self, event):
+        working, absolute = self.paths(event)
 
         # Ignore infile references and existing reverse references (both have a file on the other end)
         if not os.path.exists(absolute):
@@ -60,6 +66,16 @@ class WorkingDirectoryMonitor(FileSystemEventHandler):
             os.link(working, absolute)
 
             log.info(f"Linked destination file {absolute}")
+
+    def on_deleted(self, event):
+        _, absolute = self.paths(event)
+
+        # Check for already linked files
+        if os.path.exists(absolute):
+            # Remove the file
+            os.unlink(absolute)
+
+            log.info(f"Unlinked destination file {absolute}")
 
 def generate_ssh_command():
     """
