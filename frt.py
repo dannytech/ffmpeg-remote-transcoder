@@ -275,16 +275,20 @@ def run_ffmpeg_command(context="Server"):
 
         return run_ffmpeg_command(context="Client")
 
-    # Plant a canary to prevent a race condition due to SMB latency
-    subprocess.run([ "touch", os.path.join(remotedir, "canary.frt") ], shell=False, bufsize=0, universal_newlines=True)
+    if context == "Server":
+        # Plant a canary to prevent a race condition due to SMB latency
+        command = ssh_command + [ "touch", os.path.join(remotedir, "canary.frt") ]
 
-    log.info("Waiting for observer to exit...")
+        # Run the command on the remote host
+        subprocess.run(command, shell=False, bufsize=0, universal_newlines=True)
 
-    # Wait for the monitor thread to terminate after seeing the canary file
-    wait = config.getint("Client", "WriteTimeout", fallback=3)
-    observer.join(timeout=wait)
+        log.info("Waiting for observer to exit...")
 
-    # Check if the observer joined correctly
+        # Wait for the monitor thread to terminate after seeing the canary file
+        wait = config.getint("Client", "WriteTimeout", fallback=3)
+        observer.join(timeout=wait)
+
+    # Check if the observer joined correctly, or just is running locally
     if observer.is_alive():
         # Stop the observer since the canary failed to do so
         observer.stop()
@@ -292,7 +296,8 @@ def run_ffmpeg_command(context="Server"):
         # Rejoin, this time it should succeed
         observer.join()
 
-        log.warning("Killed long-running observer, consider increasing WaitTimeout")
+        # Long-running canaries mean a large amount of latency slowed down the transfer
+        context == "Server" and log.warning("Killed long-running observer, consider increasing WaitTimeout")
 
     # Return the ffmpeg return code
     return proc.returncode
