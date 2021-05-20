@@ -41,6 +41,7 @@ Copy the sample configuration file to `/etc/frt.conf`. The settings are document
     * `FfprobePath` (optional, default `/usr/bin/ffprobe`): The location of the ffprobe binary on the server
 * `Client`
     * `WorkingDirectory` (optional, default `/opt/frt/`): A working directory for FRT to create symlinks in, shared by Samba
+    * `WriteTimeout` (optional, default 3): The time, in seconds, FRT will wait for files to be written, increase this on high-latency connections
     * `FfmpegPath` (optional, default `/usr/bin/ffmpeg`): The location of the fallback ffmpeg binary on the client
     * `FfprobePath` (optional, default `/usr/bin/ffprobe`): The location of the fallback ffprobe binary on the client
 * `Logging`

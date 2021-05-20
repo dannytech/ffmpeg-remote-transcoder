@@ -49,6 +49,9 @@ bypass = len([ cmd for cmd in commands_bypass if cmd in ffmpeg_args ]) > 0
 
 # Event handler for working directory changes
 class WorkingDirectoryMonitor(FileSystemEventHandler):
+    def __init__(self, observer):
+        self.observer = observer
+
     def paths(self, event):
         # Generate the various paths representing a single file
         working = os.path.join(localdir, event.src_path)
@@ -59,6 +62,12 @@ class WorkingDirectoryMonitor(FileSystemEventHandler):
 
     def on_created(self, event):
         working, absolute = self.paths(event)
+
+        # Check for a canary file and stop monitoring if it's seen
+        if absolute == f"{job}.frt":
+            self.observer.stop()
+
+            return
 
         # Ignore infile references and existing reverse references (both have a file on the other end)
         if not os.path.exists(absolute):
@@ -164,11 +173,13 @@ def reverse_reference():
 
     :returns: The file system observer, for easy stopping
     """
-    # Create a new monitor
-    monitor = WorkingDirectoryMonitor()
-
     # Create a file system observer
     observer = Observer()
+
+    # Create a new monitor
+    monitor = WorkingDirectoryMonitor(observer)
+
+    # Begin monitoring the directory
     observer.schedule(monitor, localdir, recursive=True)
 
     # Begin monitoring the directory for changes
@@ -252,16 +263,32 @@ def run_ffmpeg_command(context="Server"):
     # Run the command
     proc = subprocess.run(command, shell=False, bufsize=0, universal_newlines=True, stdin=stdin, stdout=stdout, stderr=stderr)
 
-    # Stop watching for file system changes
-    observer.stop()
-
-    # Wait for the monitor thread to terminate
-    observer.join()
-
     # Fall back to local ffmpeg if SSH could not connect
     if context == "Server" and proc.returncode == 255:
         log.error("Failed to connect to remote host")
+
+        # Stop the existing observer
+        observer.stop()
+
+        # Rejoin the thread, this will introduce a slight delay
+        observer.join()
+
         return run_ffmpeg_command(context="Client")
+
+    # Plant a canary to prevent a race condition due to SMB latency
+    subprocess.run([ "touch", os.path.join(remotedir, f"{job}.frt") ], shell=False, bufsize=0, universal_newlines=True)
+
+    # Wait for the monitor thread to terminate after seeing the canary file
+    wait = config.getint("Client", "WriteTimeout", fallback=3)
+    observer.join(timeout=wait)
+
+    # Check if the observer joined correctly
+    if observer.is_alive():
+        # Stop the observer since the canary failed to do so
+        observer.stop()
+
+        # Rejoin, this time it should succeed
+        observer.join()
     
     # Return the ffmpeg return code
     return proc.returncode
